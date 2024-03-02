@@ -12,11 +12,11 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
-
+	
 type Template struct {
 	tmpl *template.Template
 }
-
+	
 func newTemplate() *Template {
 	return &Template{
 		tmpl: template.Must(template.ParseGlob("templates/*.html")),

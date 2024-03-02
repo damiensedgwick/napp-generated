@@ -1,4 +1,4 @@
-module github.com/damiensedgwick/napp-app
+module github.com/damiensedgwick/napp-template
 
 go 1.22.0
 
@@ -6,7 +6,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.11.4
-	github.com/mattn/go-sqlite3 v1.14.6
+	github.com/mattn/go-sqlite3 v1.14.22
 )
 
 require (
