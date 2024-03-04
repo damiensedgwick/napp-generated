@@ -2,6 +2,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,linux,windows,macos
 
 .env
+bin
+napp-template.db
 
 ### Go ###
 # If you prefer the allow list template instead of the deny list, see community template:
@@ -101,5 +103,3 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/go,linux,windows,macos
-bin
-auth-diaries.db
