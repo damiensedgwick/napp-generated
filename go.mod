@@ -1,4 +1,4 @@
-module github.com/damiensedgwick/napp-template
+module github.com/damiensedgwick/napp-generated
 
 go 1.22.0
 

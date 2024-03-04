@@ -1,10 +1,10 @@
-BINARY_NAME=napp-template
+BINARY_NAME=napp-generated
 
 all: clean format build run
 
 build:
 	@echo "Building..."
-	@go build -tags netgo -a -v -o bin/$(BINARY_NAME) cmd/main.go
+	@go build -o bin/$(BINARY_NAME) cmd/main.go
 
 clean:
 	@echo "Cleaning..."
