@@ -13,6 +13,9 @@ COPY static /app/static
 # Copy all template files into the container
 COPY templates /app/templates
 
+# Copy .env file into the container
+COPY .env /app/.env
+
 # Expose port 8080 to run the application
 EXPOSE 8080
 
