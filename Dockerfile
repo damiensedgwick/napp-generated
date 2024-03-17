@@ -11,7 +11,10 @@ COPY bin/napp-generated /app/napp-generated
 COPY static /app/static
 
 # Copy all template files into the container
-COPY templates /app/templates
+COPY template /app/template
+
+# Copy .env file into the container
+COPY .env /app/.env
 
 # Copy .env file into the container
 COPY .env /app/.env

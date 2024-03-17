@@ -1,0 +1,100 @@
+{{ block "index" . }}
+<!DOCTYPE html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Napp | Nano App | Go, HTMX & SQLite</title>
+	<meta name="description"
+		content="A command line tool that helps you build and test web app ideas blazingly-fast with a streamlined Go, HTMX, and SQLite stack. Authored by Damien Sedgwick.">
+	<link href="static/styles.css" rel="stylesheet">
+	<script src="static/htmx.min.js"></script>
+</head>
+
+<body>
+	<header>
+		<nav>
+			<a href="https://github.com/damiensedgwick/napp" target="_blank">Napp</a>
+			<ul>
+				{{ if not .User }}
+				{{ template "sign-in" . }}
+				{{ end }}
+
+				{{ if .User }}
+				{{ template "sign-out" . }}
+				{{ end }}
+			</ul>
+		</nav>
+	</header>
+
+	<main>
+		<section id="content">
+			{{ if not .User }}
+			<h1>Welcome to Napp!</h1>
+			{{ end }}
+
+			{{ if .User }}
+			<h1>Welcome {{ .User.Name }}</h1>
+			{{ end }}
+
+			<p>
+				Thank you for downloading and installing Napp. For any issues or
+				contributions, please feel free to raise them <a href="https://github.com/damiensedgwick/napp">here</a>
+			</p>
+		</section>
+	</main>
+
+	<script type="text/javascript">
+		document.addEventListener("DOMContentLoaded", (event) => {
+			document.body.addEventListener('htmx:beforeSwap', function (evt) {
+				if (evt.detail.xhr.status === 422) {
+					// allow 422 responses to swap as we are using this as a signal that
+					// a form was submitted with bad data and want to rerender with the
+					// errors
+					//
+					// set isError to false to avoid error logging in console
+					evt.detail.shouldSwap = true;
+					evt.detail.isError = false;
+				}
+			});
+		});
+	</script>
+</body>
+
+</html>
+{{ end }}
+
+{{ block "sign-in" . }}
+<li>
+	<button type="button" hx-get="/auth/sign-in" hx-target="#content">Sign In</button>
+</li>
+{{ end }}
+
+{{ block "sign-out" . }}
+<li>
+	<button type="button" hx-post="/auth/sign-out" hx-target="body">Sign Out</button>
+</li>
+{{ end }}
+
+{{ block "auth-form" . }}
+<form id="auth-form" hx-post="/auth/sign-in" hx-target="body">
+	<p>Sign in to Napp</p>
+	<small>
+		An example user has been created in the database for you, you can login
+		using: <b>johnsnow@winterfell.com</b> and <b>ghost</b>
+	</small>
+	<div>
+		Email:
+		<label for="email">
+			<input type="text" name="email" value="" />
+		</label>
+	</div>
+	<div>
+		Password:
+		<label for="password">
+			<input type="password" name="password" value="" />
+		</label>
+	</div>
+	<button type="submit">Sign In</button>
+</form>
+{{ end }}
