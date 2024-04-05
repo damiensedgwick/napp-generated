@@ -5,141 +5,17 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
-
-func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("error loading godotenv")
-	}
-
-	r := http.NewServeMux()
-	fs := http.FileServer(http.Dir("./static"))
-	r.Handle("/static/", http.StripPrefix("/static/", fs))
-
-	db, err := gorm.Open(sqlite.Open(os.Getenv("NAPP_GENERATED_DB_PATH")), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	db.AutoMigrate(&User{})
-	createInitialUser(db)
-
-	store := sessions.NewCookieStore([]byte(os.Getenv("NAPP_GENERATED_COOKIE_STORE_SECRET")))
-
-	stack := CreateMiddlewareStack(
-		Logging,
-	)
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		t := newTemplate()
-
-		session, _ := store.Get(r, "session")
-		if session.Values["user"] != nil {
-			var user User
-
-			err := json.Unmarshal(session.Values["user"].([]byte), &user)
-			if err != nil {
-				fmt.Println("error unmarshalling user value")
-			}
-
-			t.Render(w, "index", newPageData(user))
-			return
-		}
-
-		var data interface{}
-
-		t.Render(w, "index", data)
-		return
-	})
-
-	r.HandleFunc("GET /auth/sign-in", func(w http.ResponseWriter, r *http.Request) {
-		t := newTemplate()
-
-		var data interface{}
-
-		t.Render(w, "auth-form", data)
-		return
-	})
-
-	r.HandleFunc("POST /auth/sign-in", func(w http.ResponseWriter, r *http.Request) {
-		t := newTemplate()
-
-		err := r.ParseForm()
-		if err != nil {
-			http.Error(w, "Error parsing form data", http.StatusBadRequest)
-		}
-
-		email := r.Form.Get("email")
-		password := r.Form.Get("password")
-
-		var user User
-		db.First(&user, "email = ?", email)
-
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-			http.Error(w, "Unauthorised", http.StatusUnauthorized)
-			return
-		}
-
-		session, _ := store.Get(r, "session")
-		session.Options = &sessions.Options{
-			Path:     "/",
-			MaxAge:   86400 * 7,
-			HttpOnly: true,
-		}
-
-		userBytes, err := json.Marshal(user)
-		if err != nil {
-			fmt.Println("error marshalling user value")
-		}
-
-		session.Values["user"] = userBytes
-
-		err = session.Save(r, w)
-		if err != nil {
-			fmt.Println("error saving session: ", err)
-		}
-
-		t.Render(w, "index", newPageData(user))
-		return
-	})
-
-	r.HandleFunc("POST /auth/sign-out", func(w http.ResponseWriter, r *http.Request) {
-		t := newTemplate()
-
-		sess, _ := store.Get(r, "session")
-		sess.Options.MaxAge = -1
-		err := sess.Save(r, w)
-		if err != nil {
-			fmt.Println("error saving session")
-		}
-
-		var data interface{}
-
-		t.Render(w, "index", data)
-		return
-	})
-
-	s := http.Server{
-		Addr:    ":8080",
-		Handler: stack(r),
-	}
-
-	fmt.Println("Running server on localhost:8080")
-	if err := s.ListenAndServe(); err != nil {
-		log.Fatal(err)
-	}
-}
 
 type Template struct {
 	tmpl *template.Template
@@ -147,60 +23,122 @@ type Template struct {
 
 func newTemplate() *Template {
 	return &Template{
-		tmpl: template.Must(
-			template.ParseGlob("template/*.html")),
+		tmpl: template.Must(template.ParseGlob("template/*.html")),
 	}
 }
 
-func (t *Template) Render(w io.Writer, name string, data interface{}) error {
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.tmpl.ExecuteTemplate(w, name, data)
 }
 
-type Middleware func(http.Handler) http.Handler
-
-func CreateMiddlewareStack(xs ...Middleware) Middleware {
-	return func(next http.Handler) http.Handler {
-		for i := len(xs) - 1; i >= 0; i-- {
-			x := xs[i]
-			next = x(next)
-		}
-		return next
+func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("error loading godotenv")
 	}
-}
 
-type wrappedWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
+	e := echo.New()
 
-func (w *wrappedWriter) WriteHeader(statusCode int) {
-	w.ResponseWriter.WriteHeader(statusCode)
-	w.statusCode = statusCode
-}
+	e.Static("/static", "static")
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.Secure())
 
-func Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+	store := sessions.NewCookieStore([]byte(os.Getenv("NAPP_GENERATED_COOKIE_STORE_SECRET")))
+	e.Use(session.Middleware(store))
 
-		wrapped := &wrappedWriter{
-			ResponseWriter: w,
-			statusCode:     http.StatusOK,
+	e.Renderer = newTemplate()
+
+	db, err := gorm.Open(sqlite.Open(os.Getenv("NAPP_GENERATED_DB_PATH")), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(&Lead{}, &User{})
+
+	e.GET("/", func(c echo.Context) error {
+		sess, _ := session.Get("session", c)
+
+		if sess.Values["user"] != nil {
+			var user User
+
+			err := json.Unmarshal(sess.Values["user"].([]byte), &user)
+			if err != nil {
+				fmt.Println("error unmarshalling user value")
+				return err
+			}
+
+			return c.Render(200, "index", newPageData(user, newLeadFormData()))
 		}
 
-		next.ServeHTTP(wrapped, r)
-
-		log.Println(r.Method, r.URL.Path, wrapped.statusCode, time.Since(start))
+		return c.Render(200, "index", newPageData(newUser(), newLeadFormData()))
 	})
+
+	e.POST("/join-waitlist", func(c echo.Context) error {
+		email := c.FormValue("email")
+
+		if leadExists(email, db) {
+			leadFormData := LeadFormData{
+				Errors: map[string]string{
+					"email": "Email is already subscribed",
+				},
+				Values: map[string]string{
+					"email": email,
+				},
+			}
+
+			return c.Render(422, "waitlist", leadFormData)
+		}
+
+		db.Create(&Lead{
+			Email: email,
+		})
+
+		return c.Render(200, "waitlist", newLeadFormData())
+	})
+
+	e.Logger.Fatal(e.Start(":8080"))
 }
 
 type PageData struct {
-	User User
+	User     User
+	LeadForm LeadFormData
 }
 
-func newPageData(user User) PageData {
+func newPageData(user User, leadForm LeadFormData) PageData {
 	return PageData{
-		User: user,
+		User:     user,
+		LeadForm: leadForm,
 	}
+}
+
+type Lead struct {
+	gorm.Model
+	Email     string
+	CreatedAt time.Time
+	UpdatedAt *time.Time
+}
+
+type LeadFormData struct {
+	Errors map[string]string
+	Values map[string]string
+}
+
+func newLeadFormData() LeadFormData {
+	return LeadFormData{
+		Errors: map[string]string{},
+		Values: map[string]string{},
+	}
+}
+
+func leadExists(email string, db *gorm.DB) bool {
+	var lead Lead
+	err := db.First(&lead, "email = ?", email).Error
+	if err == gorm.ErrRecordNotFound {
+		return false
+	}
+
+	return true
 }
 
 type User struct {
@@ -212,17 +150,6 @@ type User struct {
 	UpdatedAt *time.Time
 }
 
-func createInitialUser(db *gorm.DB) {
-	var user User
-	err := db.First(&user, "email = ?", "johnsnow@winterfell.com").Error
-	if err == gorm.ErrRecordNotFound {
-		db.Create(&User{
-			Model:     gorm.Model{},
-			Name:      "John Snow",
-			Email:     "johnsnow@winterfell.com",
-			Password:  "$2a$10$1oPDSctekA8P2IHDHoKNb.JjWJ4XFwzZAvYSHp0s4byhFeMp9.da.",
-			CreatedAt: time.Time{},
-			UpdatedAt: &time.Time{},
-		})
-	}
+func newUser() User {
+	return User{}
 }
