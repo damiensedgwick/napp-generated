@@ -13,11 +13,10 @@
 </head>
 
 <body>
-
   <main>
-    <div>
-      <h1>Napp Generated</h1>
-      <p>Join our waiting list and you'll be the first to know when we launch, ensuring you don't miss out on any exciting updates or early access opportunities.</p>
+    <div class="hero">
+      <h1 class="hero__title">Napp Generated</h1>
+      <p class="hero__intro">Join our waiting list and you'll be the first to know when we launch, ensuring you don't miss out on any exciting updates or early access opportunities.</p>
       {{ template "waitlist" .LeadForm }}
     </div>
   </main>
@@ -25,7 +24,7 @@
   <script type="text/javascript">
   document.addEventListener("DOMContentLoaded", (event) => {
     document.body.addEventListener('htmx:beforeSwap', function (evt) {
-      if (evt.detail.xhr.status === 422) {
+      if (evt.detail.xhr.status === 422 || evt.detail.xhr.status === 500) {
         console.log("setting status to paint");
         // allow 422 responses to swap as we are using this as a signal that
         // a form was submitted with bad data and want to rerender with the
@@ -43,10 +42,11 @@
 {{ end }}
 
 {{ block "waitlist" . }}      
-<form id="waitlist-form" hx-post="/join-waitlist" hx-swap="outerHTML">
-  <div>
-    <label for="email">
+<form class="waitlist-form" id="waitlist-form" hx-post="/join-waitlist" hx-swap="outerHTML">
+  <div class="waitlist-form__group">
+    <label class="waitlist-form__label" for="email">
       <input 
+        class="waitlist-form__input"
         type="text"
         name="email"
         placeholder="Please enter your email"
@@ -57,10 +57,13 @@
       >
     </label>
 
-    <button type="submit">Join Waitlist</button>
-  </div> 
+    <button class="btn waitlist-form__btn" type="submit">Join Waitlist</button>
+  </div>
+
   {{ if .Errors.email }}
-  <p>{{ .Errors.email }}</p>
+  <p class="waitlist-form__message waitlist-form__message-error">
+    {{ .Errors.email }}
+  </p>
   {{ end }}
 </form>
 {{ end }}
