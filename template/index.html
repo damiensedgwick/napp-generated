@@ -12,7 +12,32 @@
   <script src="static/htmx.min.js"></script>
 </head>
 
-<body>
+<body id="body">
+  <nav class="nav">
+    <div class="container">
+      <div class="nav__content">
+	    <a class="nav__brand" href="/" title="Heating Oil Tracker Home">
+	      Napp Generated
+	    </a>
+	    <ul class="nav__list">
+	      {{ if not .User }}
+	      <li class="nav__item">
+		    <button class="nav__link" hx-get="/auth/sign-in" hx-target="body">Sign In</button>
+	      </li>
+	      {{ end }}
+
+     	  {{ if .User }}
+	      <li class="nav__item">
+		    <a class="nav__link" href="/dashboard" title="Dashboard">Dashboard</a>
+	      </li>
+	      <li class="nav__item">
+		    <button class="nav__link" hx-post="/auth/sign-out" hx-target="body">Sign Out</button>
+	      </li>
+          {{ end }}
+	    </ul>
+      </div>
+    </div>
+  </nav>
   <main>
     <div class="hero">
       <h1 class="hero__title">Napp Generated</h1>
@@ -68,4 +93,83 @@
 </form>
 {{ end }}
 
-  
+{{ block "waitlist-joined" . }}
+<p>Thanks! You successfully joined our waitlist</p>
+{{ end }}
+
+{{ block "sign-up-form" . }}
+<div class="auth-form__wrapper">
+  <form class="auth-form" id="sign-up-form" hx-post="/auth/sign-up" hx-target="body">
+    <p class="auth-form__title">
+	  Napp Generated
+    </p>
+
+    <div class="auth-form__group">
+      <label class="auth-form__label" for="name">
+        Name
+      </label>
+      <input id="name" class="auth-form__input" type="text" name="name" autocomplete="name" value="" required>
+    </div>
+
+    <div class="auth-form__group">
+      <label class="auth-form__label" for="email">
+        Email
+      </label>
+      <input id="email" class="auth-form__input" type="text" name="email" autocomplete="email" value="" required>
+    </div>
+
+    <div class="auth-form__group">
+      <label class="auth-form__label" for="password">
+        Password
+      </label>
+      <input id="password" class="auth-form__input" type="password" name="password" value="" required>
+    </div>
+
+    <button class="btn auth-form__btn" type="submit">Register</button>
+
+    {{ if .Errors.email}}
+    <p class="auth-form__message auth-form__message-error">
+      {{ .Errors.email}}
+    </p>
+    {{ end }}
+
+    <p class="auth-form__type">Already have an account? <button class="btn btn-ghost" type="button"
+        hx-get="/auth/sign-in" hx-target="body">Sign In</button></p>
+  </form>
+</div>
+{{ end }}
+
+{{ block "sign-in-form" . }}
+<div class="auth-form__wrapper">
+  <form class="auth-form" id="sign-in-form" hx-post="/auth/sign-in" hx-target="body">
+    <p class="auth-form__title">
+      Napp Generated
+    </p>
+    <div class="auth-form__group">
+      <label class="auth-form__label" for="email">
+        Email
+      </label>
+      <input id="email" class="auth-form__input" type="text" name="email" autocomplete="email" value="" required>
+    </div>
+
+    <div class="auth-form__group">
+      <label class="auth-form__label" for="password">
+        Password
+      </label>
+      <input id="password" class="auth-form__input" type="password" name="password" value="" required>
+    </div>
+
+    <button class="btn auth-form__btn" type="submit">Sign In</button>
+
+    {{ if .Errors.email}}
+    <p class="auth-form__message auth-form__message-error">
+      {{ .Errors.email}}
+    </p>
+    {{ end }}
+
+    <p class="auth-form__type">Do you need an account? <button class="btn btn-ghost" type="button"
+        hx-get="/auth/sign-up" hx-target="body">Register Now</button></p>
+  </form>
+</div>
+{{ end }}
+

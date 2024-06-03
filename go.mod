@@ -1,14 +1,15 @@
 module github.com/damiensedgwick/napp-generated
 
-go 1.22.1
+go 1.22.3
 
 require (
 	github.com/gorilla/sessions v1.2.2
 	github.com/joho/godotenv v1.5.1
-	github.com/labstack/echo-contrib v0.16.0
-	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/echo-contrib v0.17.1
+	github.com/labstack/echo/v4 v4.12.0
+	golang.org/x/crypto v0.23.0
 	gorm.io/driver/sqlite v1.5.5
-	gorm.io/gorm v1.25.9
+	gorm.io/gorm v1.25.10
 )
 
 require (
@@ -23,9 +24,8 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 )
