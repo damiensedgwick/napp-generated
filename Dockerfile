@@ -1,20 +1,39 @@
-# Use the official Ubuntu image as the base image
-FROM ubuntu:latest
+# Build stage
+FROM golang:1.24-alpine AS builder
 
-# Set the working directory inside the container
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev
+
 WORKDIR /app
 
-# Copy pre-built binary into the container
-COPY bin/napp-generated /app/napp-generated
+# Copy go mod files
+COPY go.mod go.sum ./
 
-# Copy all static files into the container
-COPY static /app/static
+# Download dependencies
+RUN go mod download
 
-# Copy all template files into the container
-COPY template /app/template
+# Copy source code
+COPY . .
 
-# Expose port 8080 to run the application
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -o main ./cmd/main.go
+
+# Runtime stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install required dependencies for SQLite
+RUN apk add --no-cache sqlite-libs
+
+# Copy the binary from builder
+COPY --from=builder /app/main .
+COPY --from=builder /app/template ./template
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/.env .
+
+# Expose port 8080
 EXPOSE 8080
 
-# Command to run the application
-CMD ["./napp-generated"]
+# Run the application
+CMD ["./main"]
